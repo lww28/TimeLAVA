@@ -69,17 +69,29 @@ def unbalanced_sinkhorn_dual(
     f = np.zeros(n)
     g = np.zeros(m)
 
-    for it in range(numItermax):
+    # The entropic scaling iteration contracts at a rate that degrades as
+    # reg -> 0, so a fixed small iteration cap silently returns an
+    # *unconverged* potential at tiny reg. We therefore (i) check the change
+    # of BOTH potentials every sweep against an absolute tolerance, and
+    # (ii) let the iteration ceiling scale with 1/reg, which is the known
+    # dependence of Sinkhorn's iteration complexity (O(1/reg)).
+    max_iter = max(numItermax, int(50.0 / reg))
+
+    for it in range(max_iter):
         f_prev = f
+        g_prev = g
         M_g = (g[None, :] - D) / reg + log_b[None, :]
         f = -rho * reg * _logsumexp(M_g, axis=1)
         M_f = (f[:, None] - D) / reg + log_a[:, None]
         g = -rho * reg * _logsumexp(M_f, axis=0)
 
-        if it % 10 == 0:
-            err = np.max(np.abs(f - f_prev)) / (1.0 + np.max(np.abs(f)))
-            if err < stopThr:
-                break
+        # Absolute change of the full potential pair across one sweep.
+        delta = max(
+            np.max(np.abs(f - f_prev)),
+            np.max(np.abs(g - g_prev)),
+        )
+        if delta < stopThr:
+            break
 
     log_T = (
         (f[:, None] + g[None, :] - D) / reg

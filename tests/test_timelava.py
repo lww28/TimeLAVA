@@ -107,6 +107,37 @@ def test_theorem_b_2_ranking_preserved(rng):
         assert spearmanr(v, ref).statistic > 0.90
 
 
+def test_theorem_b_2_monotone_convergence(rng):
+    """v_eps -> v monotonically as eps -> 0 (Theorem B.2 / Fig. 8).
+
+    Regression test: a too-loose Sinkhorn convergence criterion returns
+    *unconverged* potentials at small eps, producing a non-monotone L1
+    error curve. The paper requires monotone O(eps)-like decay.
+    """
+    X_ref, base = make_reference(1200, rng)
+    X_eval, _ = inject_point_anomalies(base, rng, frac=0.04, lo=5, hi=8)
+
+    ref = TimeLAVA(
+        TimeLAVAConfig(L=64, S=16, kappa=1.0, reg=1e-4)
+    ).fit(X_eval, X_ref).segment_values
+
+    eps_grid = [3e-1, 1e-1, 3e-2, 1e-2, 3e-3, 1e-3]
+    l1 = []
+    for eps in eps_grid:
+        v = TimeLAVA(
+            TimeLAVAConfig(L=64, S=16, kappa=1.0, reg=eps)
+        ).fit(X_eval, X_ref).segment_values
+        l1.append(float(np.mean(np.abs(v - ref))))
+
+    # Strictly decreasing as eps shrinks (allow tiny numerical slack).
+    for earlier, later in zip(l1, l1[1:]):
+        assert later <= earlier + 1e-7, f"non-monotone L1: {l1}"
+
+    # Empirical convergence rate close to the paper's ~O(eps^0.88).
+    slope = np.polyfit(np.log(eps_grid), np.log(l1), 1)[0]
+    assert 0.7 < slope < 1.2, f"convergence rate O(eps^{slope:.2f}) off"
+
+
 def test_label_consistency_path_runs(rng):
     """c > 0 path executes and consumes labels (Eq. 6)."""
     X_ref, base = make_reference(900, rng)

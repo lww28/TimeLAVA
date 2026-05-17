@@ -1,10 +1,7 @@
 # TimeLAVA
 
-An PyTorch implementation of **TimeLAVA** from
-
-> W.Liu, W.Quan, A.Zuo, E.Gao, V.Nguyen, D.Sejdinovic, H.Bondell, M.Gong.
-> *"TimeLAVA: Learning-Agnostic Valuation for Time Series Data."*
-> **ICML 2026.**
+An implementation of **TimeLAVA: Learning-Agnostic
+Valuation for Time Series Data** (ICML 2026 submission).
 
 TimeLAVA assigns a value to each temporal segment of a time series by its
 marginal contribution to minimising the **Selective Wavelet-based Wasserstein
@@ -12,8 +9,9 @@ marginal contribution to minimising the **Selective Wavelet-based Wasserstein
 **no model training**.
 
 ```
-TimeLAVA/
+timelava-pkg/
 ├── README.md
+├── LICENSE
 ├── src/
 │   └── timelava/
 │       ├── __init__.py            # public API
@@ -99,3 +97,12 @@ implementation uses a **log-domain unbalanced Sinkhorn** (the Séjourné et al.,
 2019 formulation the paper cites), which is stable across the entire `ε` range
 and returns `(f*, g*)` directly in the cost's own units — exactly as defined by
 the KKT system in Appendix B.4. Contraction factor `ρ = κ/(κ+ε)`.
+
+The entropic scaling iteration contracts more slowly as `ε → 0`, so the solver
+checks the change of *both* potentials each sweep against an absolute tolerance
+and lets the iteration ceiling scale with `1/ε` (Sinkhorn's known `O(1/ε)`
+iteration complexity). This is required for the values to converge
+**monotonically** with the empirical rate `~O(ε^0.9)` the paper reports in
+Figure 8; a fixed small iteration cap silently returns unconverged potentials
+at tiny `ε`. The regression is locked down by
+`test_theorem_b_2_monotone_convergence`.
