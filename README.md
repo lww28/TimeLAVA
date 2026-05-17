@@ -1,7 +1,10 @@
 # TimeLAVA
 
-An implementation of **TimeLAVA: Learning-Agnostic
-Valuation for Time Series Data** (ICML 2026 submission).
+An PyTorch implementation of **TimeLAVA** from
+
+> W.Liu, W.Quan, A.Zuo, E.Gao, V.Nguyen, D.Sejdinovic, H.Bondell, M.Gong.
+> *"TimeLAVA: Learning-Agnostic Valuation for Time Series Data."*
+> **ICML 2026.**
 
 TimeLAVA assigns a value to each temporal segment of a time series by its
 marginal contribution to minimising the **Selective Wavelet-based Wasserstein
